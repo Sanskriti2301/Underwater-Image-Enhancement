@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Underwater AI - Image Enhancement & Detection</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #004499;
+            --accent-color: #00ccff;
+            --dark-bg: #0a0e27;
+            --card-bg: #1a2847;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a8c0;
+            --success-color: #00cc66;
+            --warning-color: #ffaa00;
+            --danger-color: #ff3333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #0f1535 100%);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 204, 255, 0.2);
+            padding: 1rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--accent-color) !important;
+        }
+
+        .navbar-brand i {
+            margin-right: 0.5rem;
+        }
+
+        .container-main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .hero-section {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .hero-section h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .hero-section p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .upload-box {
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(0, 102, 204, 0.1) 100%);
+            border: 2px dashed var(--accent-color);
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+        }
+
+        .upload-box:hover {
+            border-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(0, 102, 204, 0.2) 100%);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 204, 255, 0.2);
+        }
+
+        .upload-box i {
+            font-size: 3rem;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        .upload-box.dragover {
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(0, 102, 204, 0.3) 100%);
+            border-color: var(--primary-color);
+            box-shadow: 0 15px 40px rgba(0, 204, 255, 0.3);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 102, 204, 0.4);
+            color: var(--text-primary);
+        }
+
+        .processing-container {
+            display: none;
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(0, 204, 255, 0.3);
+        }
+
+        .processing-container.show {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .spinner-border {
+            color: var(--accent-color);
+            border-width: 3px;
+        }
+
+        .results-container {
+            display: none;
+            gap: 2rem;
+        }
+
+        .results-container.show {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 204, 255, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .result-card:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 8px 20px rgba(0, 204, 255, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .result-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .result-info {
+            padding: 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .result-title {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .detection-stats {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(0, 204, 255, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .alert-box {
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid var(--danger-color);
+            color: #ff9999;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .detection-list {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .detection-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background: rgba(0, 204, 255, 0.05);
+            border-radius: 4px;
+            margin-bottom: 0.3rem;
+        }
+
+        .detection-badge {
+            background: var(--primary-color);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .history-section {
+            margin-top: 3rem;
+            border-top: 2px solid rgba(0, 204, 255, 0.2);
+            padding-top: 2rem;
+        }
+
+        .history-section h2 {
+            margin-bottom: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .history-table {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 204, 255, 0.3);
+        }
+
+        .table {
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .table thead {
+            background: rgba(0, 102, 204, 0.2);
+        }
+
+        .table th {
+            border-bottom: 2px solid rgba(0, 204, 255, 0.2);
+            font-weight: 600;
+            padding: 1rem;
+        }
+
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(0, 204, 255, 0.1);
+            vertical-align: middle;
+        }
+
+        .table tbody tr:hover {
+            background: rgba(0, 204, 255, 0.05);
+        }
+
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-view {
+            background: var(--primary-color);
+            color: var(--text-primary);
+        }
+
+        .btn-view:hover {
+            background: var(--secondary-color);
+        }
+
+        .btn-delete {
+            background: var(--danger-color);
+            color: var(--text-primary);
+        }
+
+        .btn-delete:hover {
+            background: #cc0000;
+        }
+
+        .error-message {
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid var(--danger-color);
+            color: #ff9999;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .success-message {
+            background: rgba(0, 204, 102, 0.1);
+            border: 1px solid var(--success-color);
+            color: #66ff99;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 1.8rem;
+            }
+
+            .upload-box {
+                padding: 2rem;
+            }
+
+            .results-container.show {
+                grid-template-columns: 1fr;
+            }
+
+            .container-main {
+                padding: 1rem;
+            }
+        }
+
+        .loading-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-water"></i>Underwater AI
+            </a>
+            <span class="navbar-text">Advanced Image Enhancement & Object Detection</span>
+        </div>
+    </nav>
+
+    <div class="container-main">
+        <div class="hero-section">
+            <h1>Underwater Image Analysis Platform</h1>
+            <p>Advanced enhancement and object detection powered by CNN, GAN, and YOLOv8</p>
+        </div>
+
+        <div id="messageContainer"></div>
+
+        <!-- Upload Section -->
+        <div class="upload-box" id="uploadBox">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <h3>Upload Underwater Image</h3>
+            <p>Drag and drop your image here or click to select</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <!-- Processing Status -->
+        <div class="processing-container" id="processingContainer">
+            <div class="text-center">
+                <div class="spinner-border mb-3 loading-pulse" role="status">
+                    <span class="visually-hidden">Processing...</span>
+                </div>
+                <h4>Processing Your Image</h4>
+                <p id="processingStatus">Applying CNN enhancement...</p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-container" id="resultsContainer"></div>
+
+        <!-- History Section -->
+        <div class="history-section">
+            <h2>Analysis History</h2>
+            <div class="history-table">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Uploaded</th>
+                            <th>File Name</th>
+                            <th>Objects Detected</th>
+                            <th>Unknown Objects</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No analysis records yet</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // File upload handling
+        const uploadBox = document.getElementById('uploadBox');
+        const fileInput = document.getElementById('fileInput');
+        const processingContainer = document.getElementById('processingContainer');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const messageContainer = document.getElementById('messageContainer');
+
+        uploadBox.addEventListener('click', () => fileInput.click());
+
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('dragover');
+        });
+
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('dragover');
+        });
+
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        async function handleFileUpload(file) {
+            if (!file.type.startsWith('image/')) {
+                showMessage('Please select a valid image file', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            processingContainer.classList.add('show');
+            resultsContainer.classList.remove('show');
+            resultsContainer.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResults(data);
+                    loadHistory();
+                    showMessage('Image processed successfully!', 'success');
+                } else {
+                    showMessage(data.error || 'An error occurred', 'error');
+                }
+            } catch (error) {
+                showMessage('Error uploading image: ' + error.message, 'error');
+            } finally {
+                processingContainer.classList.remove('show');
+            }
+        }
+
+        function displayResults(data) {
+            resultsContainer.innerHTML = `
+                <div class="result-card">
+                    <img src="${data.original_image}" alt="Original Image">
+                    <div class="result-info">
+                        <div class="result-title">Original Image</div>
+                        <p class="text-secondary" style="font-size: 0.85rem;">Input underwater image</p>
+                    </div>
+                </div>
+                <div class="result-card">
+                    <img src="${data.enhanced_image}" alt="Enhanced Image">
+                    <div class="result-info">
+                        <div class="result-title">Enhanced Image</div>
+                        <div class="detection-stats">
+                            <div class="stat-item">
+                                <span>Objects Detected:</span>
+                                <span class="stat-value">${data.detection_count}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Unknown Objects:</span>
+                                <span class="stat-value">${data.unknown_objects_count}</span>
+                            </div>
+                        </div>
+                        ${data.alert ? `<div class="alert-box"><i class="fas fa-exclamation-triangle"></i> ${data.alert}</div>` : ''}
+                        ${data.detections.length > 0 ? `
+                            <div class="detection-list">
+                                <strong>Detected Species:</strong>
+                                ${data.detections.slice(0, 5).map(d => `
+                                    <div class="detection-item">
+                                        <span>${d.class}</span>
+                                        <span class="detection-badge">${(d.confidence * 100).toFixed(1)}%</span>
+                                    </div>
+                                `).join('')}
+                                ${data.detections.length > 5 ? `<div class="text-secondary">+ ${data.detections.length - 5} more</div>` : ''}
+                            </div>
+                        ` : '<p class="text-secondary">No objects detected</p>'}
+                    </div>
+                </div>
+            `;
+            resultsContainer.classList.add('show');
+        }
+
+        function showMessage(message, type) {
+            const alertClass = type === 'error' ? 'error-message' : 'success-message';
+            messageContainer.innerHTML = `<div class="${alertClass}"><i class="fas fa-${type === 'error' ? 'times-circle' : 'check-circle'}"></i> ${message}</div>`;
+            setTimeout(() => {
+                messageContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/history');
+                const records = await response.json();
+                const tableBody = document.getElementById('historyTableBody');
+
+                if (records.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No analysis records yet</td></tr>';
+                    return;
+                }
+
+                tableBody.innerHTML = records.map(record => `
+                    <tr>
+                        <td>${new Date(record.timestamp).toLocaleString()}</td>
+                        <td>${record.file_uploaded}</td>
+                        <td>${record.detection_count}</td>
+                        <td>${record.unknown_objects_count}</td>
+                        <td>${record.alert ? '<span style="color: var(--warning-color);">⚠ Alert</span>' : '<span style="color: var(--success-color);">✓ OK</span>'}</td>
+                        <td>
+                            <button class="btn-small btn-view" onclick="viewResult('${record.unique_id}')">View</button>
+                            <button class="btn-small btn-delete" onclick="deleteRecord('${record.unique_id}')">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        async function deleteRecord(uniqueId) {
+            if (!confirm('Are you sure you want to delete this record?')) return;
+
+            try {
+                const response = await fetch(`/api/delete/${uniqueId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadHistory();
+                    showMessage('Record deleted successfully', 'success');
+                } else {
+                    showMessage('Error deleting record', 'error');
+                }
+            } catch (error) {
+                showMessage('Error deleting record: ' + error.message, 'error');
+            }
+        }
+
+        function viewResult(uniqueId) {
+            alert('Viewing result: ' + uniqueId);
+        }
+
+        // Load history on page load
+        loadHistory();
+    </script>
+</body>
+</html>
